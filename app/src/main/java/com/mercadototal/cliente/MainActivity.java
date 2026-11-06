@@ -179,7 +179,9 @@ public class MainActivity extends AppCompatActivity {
 
     private String precioConUSD(double cup) {
         return Carrito.dinero(cup) + " CUP" + (tasaUSD > 0 ? "  ·  " + Carrito.dinero(cup / tasaUSD) + " USD" : "");
-    }\n\n    private void salir() {
+    }
+
+    private void salir() {
         Intent i = new Intent(this, AuthActivity.class);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(i);
