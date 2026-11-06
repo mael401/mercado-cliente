@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
                 tasaUSD = v == null ? 0 : v;
                 tvTasa.setText(tasaUSD > 0 ? "Tasa del día: 1 USD = " + Carrito.dinero(tasaUSD) + " CUP" : "Tasa USD no configurada");
                 if (adapter != null) adapter.notifyDataSetChanged();
-                actualizarBotonCarrito();
+                if (btnCarrito != null) actualizarBotonCarrito();
             }
             @Override public void error(String m) { tvTasa.setText("No se pudo consultar la tasa USD"); }
         });
