@@ -166,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
             btnCarrito.setText("Tu carrito está vacío");
             btnCarrito.setEnabled(false);
         } else {
-            btnCarrito.setText("Ver carrito  ·  " + n + (n == 1 ? " producto" : " productos")
+            btnCarrito.setText("Ver carrito  ·  " + Carrito.cantidadTexto(n) + " en carrito"
                 + "  ·  " + Carrito.dinero(Carrito.total()));
             btnCarrito.setEnabled(true);
         }
