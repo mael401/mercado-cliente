@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.ListenerRegistration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -31,7 +32,9 @@ public class MainActivity extends AppCompatActivity {
     private final List<Producto> visibles = new ArrayList<>();
     private ProductoAdapter adapter;
     private Button btnCarrito;
-    private TextView tvEstado, tvSaludo, tvDireccion;
+    private TextView tvEstado, tvSaludo, tvDireccion, tvTasa;
+    private double tasaUSD = 0;
+    private ListenerRegistration tasaRegistro;
     private EditText etBuscar;
 
     @Override
@@ -47,6 +50,16 @@ public class MainActivity extends AppCompatActivity {
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
         tvSaludo = findViewById(R.id.tvSaludo);
         tvDireccion = findViewById(R.id.tvDireccion);
+        tvTasa = findViewById(R.id.tvTasa);
+        tasaRegistro = Repo.escucharTasaUSD(new Repo.Callback<Double>() {
+            @Override public void ok(Double v) {
+                tasaUSD = v == null ? 0 : v;
+                tvTasa.setText(tasaUSD > 0 ? "Tasa del día: 1 USD = " + Carrito.dinero(tasaUSD) + " CUP" : "Tasa USD no configurada");
+                if (adapter != null) adapter.notifyDataSetChanged();
+                actualizarBotonCarrito();
+            }
+            @Override public void error(String m) { tvTasa.setText("No se pudo consultar la tasa USD"); }
+        });
         tvEstado = findViewById(R.id.tvEstado);
         etBuscar = findViewById(R.id.etBuscar);
         btnCarrito = findViewById(R.id.btnCarrito);
@@ -148,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void actualizarBotonCarrito() {
-        int n = Carrito.cantidad();
+        double n = Carrito.cantidad();
         if (n == 0) {
             btnCarrito.setText("Tu carrito está vacío");
             btnCarrito.setEnabled(false);
@@ -159,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void salir() {
+    @Override protected void onDestroy() {\n        if (tasaRegistro != null) tasaRegistro.remove();\n        super.onDestroy();\n    }\n\n    private String precioConUSD(double cup) {\n        return Carrito.dinero(cup) + " CUP" + (tasaUSD > 0 ? "  ·  " + Carrito.dinero(cup / tasaUSD) + " USD" : "");\n    }\n\n    private void salir() {
         Intent i = new Intent(this, AuthActivity.class);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(i);
@@ -199,8 +212,8 @@ public class MainActivity extends AppCompatActivity {
         public void onBindViewHolder(@NonNull VH h, int pos) {
             Producto p = visibles.get(pos);
             h.nombre.setText(p.nombre);
-            h.precio.setText(Carrito.dinero(p.precio));
-            h.disp.setText("Disponibles: " + p.existencia);
+            h.precio.setText(precioConUSD(p.precio) + " / " + p.unidad());
+            h.disp.setText("Disponibles: " + p.cantidadTexto(p.existencia));
 
             Bitmap bm = Img.desdeBase64(p.id, p.foto);
             if (bm != null) {
@@ -211,10 +224,10 @@ public class MainActivity extends AppCompatActivity {
                 h.foto.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
             }
 
-            int c = Carrito.cantidadDe(p.id);
+            double c = Carrito.cantidadDe(p.id);
             h.agregar.setVisibility(c == 0 ? View.VISIBLE : View.GONE);
             h.bloque.setVisibility(c == 0 ? View.GONE : View.VISIBLE);
-            h.cant.setText(String.valueOf(c));
+            h.cant.setText(Carrito.cantidadTexto(c));
 
             View.OnClickListener sumar = v -> {
                 if (Carrito.agregar(p)) {
