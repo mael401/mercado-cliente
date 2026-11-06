@@ -1,28 +1,38 @@
 package com.mercadototal.cliente;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.auth.FirebaseAuth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
-    private final List<Producto> productos = new ArrayList<>();
+    private final List<Producto> todos = new ArrayList<>();
+    private final List<Producto> visibles = new ArrayList<>();
     private ProductoAdapter adapter;
     private Button btnCarrito;
     private TextView tvEstado, tvSaludo, tvDireccion;
+    private EditText etBuscar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,24 +44,50 @@ public class MainActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_main);
+        MaterialToolbar toolbar = findViewById(R.id.toolbar);
         tvSaludo = findViewById(R.id.tvSaludo);
         tvDireccion = findViewById(R.id.tvDireccion);
         tvEstado = findViewById(R.id.tvEstado);
+        etBuscar = findViewById(R.id.etBuscar);
         btnCarrito = findViewById(R.id.btnCarrito);
-        Button btnSalir = findViewById(R.id.btnSalir);
         RecyclerView rv = findViewById(R.id.rvProductos);
 
+        toolbar.inflateMenu(R.menu.menu_cliente);
+        toolbar.setOnMenuItemClickListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.accion_mis_pedidos) {
+                startActivity(new Intent(this, MisPedidosActivity.class));
+                return true;
+            }
+            if (id == R.id.accion_clave) {
+                Cuenta.cambiarPassword(this);
+                return true;
+            }
+            if (id == R.id.accion_salir) {
+                Carrito.vaciar();
+                FirebaseAuth.getInstance().signOut();
+                salir();
+                return true;
+            }
+            return false;
+        });
+
         adapter = new ProductoAdapter();
-        rv.setLayoutManager(new LinearLayoutManager(this));
+        rv.setLayoutManager(new GridLayoutManager(this, 2));
         rv.setAdapter(adapter);
 
         btnCarrito.setOnClickListener(v ->
             startActivity(new Intent(this, CarritoActivity.class)));
 
-        btnSalir.setOnClickListener(v -> {
-            Carrito.vaciar();
-            FirebaseAuth.getInstance().signOut();
-            salir();
+        etBuscar.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
+            @Override
+            public void onTextChanged(CharSequence s, int a, int b, int c) { }
+            @Override
+            public void afterTextChanged(Editable s) {
+                filtrar();
+            }
         });
 
         tvSaludo.setText("Hola");
@@ -72,20 +108,21 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         if (adapter == null) return;
         actualizarBotonCarrito();
+        adapter.notifyDataSetChanged();
         cargarProductos();
     }
 
     private void cargarProductos() {
-        tvEstado.setText("Cargando productos...");
-        tvEstado.setVisibility(View.VISIBLE);
+        if (todos.isEmpty()) {
+            tvEstado.setText("Cargando productos...");
+            tvEstado.setVisibility(View.VISIBLE);
+        }
         Repo.productos(new Repo.Callback<List<Producto>>() {
             @Override
             public void ok(List<Producto> r) {
-                productos.clear();
-                productos.addAll(r);
-                adapter.notifyDataSetChanged();
-                tvEstado.setText("No hay productos disponibles por ahora.");
-                tvEstado.setVisibility(r.isEmpty() ? View.VISIBLE : View.GONE);
+                todos.clear();
+                todos.addAll(r);
+                filtrar();
             }
             @Override
             public void error(String m) {
@@ -95,9 +132,31 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void filtrar() {
+        String q = etBuscar.getText().toString().trim().toLowerCase(Locale.getDefault());
+        visibles.clear();
+        for (Producto p : todos) {
+            String n = p.nombre == null ? "" : p.nombre.toLowerCase(Locale.getDefault());
+            String c = p.categoria == null ? "" : p.categoria.toLowerCase(Locale.getDefault());
+            if (q.isEmpty() || n.contains(q) || c.contains(q)) visibles.add(p);
+        }
+        adapter.notifyDataSetChanged();
+        tvEstado.setText(todos.isEmpty()
+            ? "No hay productos disponibles por ahora."
+            : "No encontramos productos con esa búsqueda.");
+        tvEstado.setVisibility(visibles.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
     private void actualizarBotonCarrito() {
-        btnCarrito.setText("Ver carrito (" + Carrito.cantidad() + ")  "
-            + Carrito.dinero(Carrito.total()));
+        int n = Carrito.cantidad();
+        if (n == 0) {
+            btnCarrito.setText("Tu carrito está vacío");
+            btnCarrito.setEnabled(false);
+        } else {
+            btnCarrito.setText("Ver carrito  ·  " + n + (n == 1 ? " producto" : " productos")
+                + "  ·  " + Carrito.dinero(Carrito.total()));
+            btnCarrito.setEnabled(true);
+        }
     }
 
     private void salir() {
@@ -110,13 +169,22 @@ public class MainActivity extends AppCompatActivity {
     class ProductoAdapter extends RecyclerView.Adapter<ProductoAdapter.VH> {
 
         class VH extends RecyclerView.ViewHolder {
-            TextView nombre, detalle;
+            ImageView foto;
+            TextView nombre, precio, disp, cant;
             Button agregar;
+            View bloque;
+            ImageButton menos, mas;
             VH(View v) {
                 super(v);
+                foto = v.findViewById(R.id.ivFoto);
                 nombre = v.findViewById(R.id.tvNombre);
-                detalle = v.findViewById(R.id.tvDetalle);
+                precio = v.findViewById(R.id.tvPrecio);
+                disp = v.findViewById(R.id.tvDisp);
+                cant = v.findViewById(R.id.tvCant);
                 agregar = v.findViewById(R.id.btnAgregar);
+                bloque = v.findViewById(R.id.bloqueCantidad);
+                menos = v.findViewById(R.id.btnMenos);
+                mas = v.findViewById(R.id.btnMas);
             }
         }
 
@@ -129,23 +197,52 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(@NonNull VH h, int pos) {
-            Producto p = productos.get(pos);
+            Producto p = visibles.get(pos);
             h.nombre.setText(p.nombre);
-            h.detalle.setText(Carrito.dinero(p.precio) + "  ·  Disponibles: " + p.existencia);
-            h.agregar.setOnClickListener(v -> {
+            h.precio.setText(Carrito.dinero(p.precio));
+            h.disp.setText("Disponibles: " + p.existencia);
+
+            Bitmap bm = Img.desdeBase64(p.id, p.foto);
+            if (bm != null) {
+                h.foto.setImageBitmap(bm);
+                h.foto.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            } else {
+                h.foto.setImageResource(R.drawable.ic_image);
+                h.foto.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            }
+
+            int c = Carrito.cantidadDe(p.id);
+            h.agregar.setVisibility(c == 0 ? View.VISIBLE : View.GONE);
+            h.bloque.setVisibility(c == 0 ? View.GONE : View.VISIBLE);
+            h.cant.setText(String.valueOf(c));
+
+            View.OnClickListener sumar = v -> {
                 if (Carrito.agregar(p)) {
                     actualizarBotonCarrito();
+                    refrescarFila(h);
                 } else {
                     Toast.makeText(MainActivity.this,
                         "No hay más existencias de este producto.",
                         Toast.LENGTH_SHORT).show();
                 }
+            };
+            h.agregar.setOnClickListener(sumar);
+            h.mas.setOnClickListener(sumar);
+            h.menos.setOnClickListener(v -> {
+                Carrito.quitarUnoPorId(p.id);
+                actualizarBotonCarrito();
+                refrescarFila(h);
             });
+        }
+
+        private void refrescarFila(VH h) {
+            int p = h.getBindingAdapterPosition();
+            if (p != RecyclerView.NO_POSITION) notifyItemChanged(p);
         }
 
         @Override
         public int getItemCount() {
-            return productos.size();
+            return visibles.size();
         }
     }
 }

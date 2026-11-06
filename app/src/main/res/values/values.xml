@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Total Market Admin</string>
+    <string name="app_name">Total Market</string>
 
-    <style name="Theme.TotalMarketPersonal" parent="Theme.MaterialComponents.Light.NoActionBar">
+    <style name="Theme.TotalMarket" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">@color/verde</item>
         <item name="colorPrimaryVariant">@color/verde_oscuro</item>
         <item name="colorOnPrimary">@color/white</item>

@@ -5,12 +5,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.textfield.TextInputEditText;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,6 +30,9 @@ public class CarritoActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_carrito);
+
+        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.setNavigationOnClickListener(v -> finish());
 
         tvTotal = findViewById(R.id.tvTotal);
         tvVacio = findViewById(R.id.tvVacio);
@@ -81,7 +86,7 @@ public class CarritoActivity extends AppCompatActivity {
             public void ok(Void r) {
                 Carrito.vaciar();
                 Toast.makeText(CarritoActivity.this,
-                    "¡Pedido enviado! Pronto lo recibirás.", Toast.LENGTH_LONG).show();
+                    "¡Pedido enviado! Puedes seguirlo en «Mis pedidos».", Toast.LENGTH_LONG).show();
                 finish();
             }
             @Override
@@ -96,12 +101,15 @@ public class CarritoActivity extends AppCompatActivity {
     class CarritoAdapter extends RecyclerView.Adapter<CarritoAdapter.VH> {
 
         class VH extends RecyclerView.ViewHolder {
-            TextView linea;
-            Button quitar;
+            TextView nombre, subtotal, cant;
+            ImageButton menos, mas;
             VH(View v) {
                 super(v);
-                linea = v.findViewById(R.id.tvLinea);
-                quitar = v.findViewById(R.id.btnQuitar);
+                nombre = v.findViewById(R.id.tvNombre);
+                subtotal = v.findViewById(R.id.tvSubtotal);
+                cant = v.findViewById(R.id.tvCant);
+                menos = v.findViewById(R.id.btnMenos);
+                mas = v.findViewById(R.id.btnMas);
             }
         }
 
@@ -115,13 +123,27 @@ public class CarritoActivity extends AppCompatActivity {
         @Override
         public void onBindViewHolder(@NonNull VH h, int pos) {
             ItemCarrito i = Carrito.items.get(pos);
-            h.linea.setText(i.cantidad + " x " + i.nombre + "\n"
+            h.nombre.setText(i.nombre);
+            h.subtotal.setText(Carrito.dinero(i.precio) + " c/u  ·  "
                 + Carrito.dinero(i.precio * i.cantidad));
-            h.quitar.setOnClickListener(v -> {
+            h.cant.setText(String.valueOf(i.cantidad));
+
+            h.menos.setOnClickListener(v -> {
                 int p = h.getBindingAdapterPosition();
                 if (p != RecyclerView.NO_POSITION) {
                     Carrito.quitarUno(p);
                     refrescar();
+                }
+            });
+            h.mas.setOnClickListener(v -> {
+                int p = h.getBindingAdapterPosition();
+                if (p == RecyclerView.NO_POSITION) return;
+                if (Carrito.sumarUno(p)) {
+                    refrescar();
+                } else {
+                    Toast.makeText(CarritoActivity.this,
+                        "No hay más existencias de este producto.",
+                        Toast.LENGTH_SHORT).show();
                 }
             });
         }

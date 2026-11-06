@@ -2,11 +2,15 @@ package com.mercadototal.cliente;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.FirebaseNetworkException;
@@ -28,7 +32,7 @@ public class AuthActivity extends AppCompatActivity {
     private View bloqueRegistro;
     private TextInputEditText etNombre, etTelefono, etDireccion, etEmail, etPassword;
     private Button btnAccion;
-    private TextView tvTitulo, tvCambiar;
+    private TextView tvTitulo, tvCambiar, tvOlvide;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +55,7 @@ public class AuthActivity extends AppCompatActivity {
         btnAccion = findViewById(R.id.btnAccion);
         tvTitulo = findViewById(R.id.tvTitulo);
         tvCambiar = findViewById(R.id.tvCambiar);
+        tvOlvide = findViewById(R.id.tvOlvide);
 
         btnAccion.setOnClickListener(v -> {
             if (modoRegistro) registrar(); else iniciar();
@@ -59,6 +64,7 @@ public class AuthActivity extends AppCompatActivity {
             modoRegistro = !modoRegistro;
             actualizarModo();
         });
+        tvOlvide.setOnClickListener(v -> olvidePassword());
         actualizarModo();
     }
 
@@ -67,11 +73,13 @@ public class AuthActivity extends AppCompatActivity {
             tvTitulo.setText("Crear cuenta");
             btnAccion.setText("Registrarme");
             tvCambiar.setText("¿Ya tienes cuenta? Inicia sesión");
+            tvOlvide.setVisibility(View.GONE);
             bloqueRegistro.setVisibility(View.VISIBLE);
         } else {
             tvTitulo.setText("Iniciar sesión");
             btnAccion.setText("Entrar");
             tvCambiar.setText("¿No tienes cuenta? Regístrate");
+            tvOlvide.setVisibility(View.VISIBLE);
             bloqueRegistro.setVisibility(View.GONE);
         }
     }
@@ -125,6 +133,7 @@ public class AuthActivity extends AppCompatActivity {
                 u.put("direccion", direccion);
                 u.put("email", email);
                 u.put("rol", "cliente");
+                u.put("activo", true);
                 u.put("creado", FieldValue.serverTimestamp());
 
                 db.collection("users").document(r.getUser().getUid()).set(u)
@@ -139,6 +148,37 @@ public class AuthActivity extends AppCompatActivity {
                 btnAccion.setEnabled(true);
                 aviso(mensajeError(e));
             });
+    }
+
+    private void olvidePassword() {
+        EditText entrada = new EditText(this);
+        entrada.setHint("Correo registrado");
+        entrada.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        entrada.setText(texto(etEmail));
+
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        FrameLayout caja = new FrameLayout(this);
+        caja.setPadding(pad, 8, pad, 0);
+        caja.addView(entrada);
+
+        new AlertDialog.Builder(this)
+            .setTitle("Restablecer contraseña")
+            .setMessage("Te enviaremos un enlace a tu correo para crear una contraseña nueva.")
+            .setView(caja)
+            .setPositiveButton("Enviar", (d, w) -> enviarReset(entrada.getText().toString().trim()))
+            .setNegativeButton("Cancelar", null)
+            .show();
+    }
+
+    private void enviarReset(String email) {
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            aviso("Escribe un correo válido.");
+            return;
+        }
+        auth.sendPasswordResetEmail(email)
+            .addOnSuccessListener(x -> aviso(
+                "Listo. Si el correo está registrado, recibirás un enlace para restablecer tu contraseña. Revisa también la carpeta de spam."))
+            .addOnFailureListener(e -> aviso(mensajeError(e)));
     }
 
     private String mensajeError(Exception e) {

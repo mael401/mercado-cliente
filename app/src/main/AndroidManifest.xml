@@ -7,10 +7,10 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/Theme.TotalMarketPersonal">
+        android:theme="@style/Theme.TotalMarket">
 
         <activity
-            android:name=".LoginActivity"
+            android:name=".AuthActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -20,7 +20,15 @@
         </activity>
 
         <activity
-            android:name=".PedidosActivity"
+            android:name=".MainActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".CarritoActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".MisPedidosActivity"
             android:exported="false" />
 
     </application>

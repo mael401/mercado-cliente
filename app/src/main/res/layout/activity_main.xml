@@ -1,49 +1,90 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:background="@color/fondo"
+    android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/tvSaludo"
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/verde"
+        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+        app:title="Total Market"
+        app:titleTextColor="@color/white" />
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="#00796B"
-        android:textSize="22sp"
-        android:textStyle="bold" />
+        android:background="@color/verde"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingTop="0dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="16dp">
 
-    <TextView
-        android:id="@+id/tvDireccion"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:textSize="14sp" />
+        <TextView
+            android:id="@+id/tvSaludo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvDireccion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:alpha="0.9"
+            android:textColor="@color/white"
+            android:textSize="13sp" />
+
+        <EditText
+            android:id="@+id/etBuscar"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_search"
+            android:drawableStart="@drawable/ic_buscar"
+            android:drawablePadding="8dp"
+            android:hint="Buscar productos"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:maxLines="1"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="@color/texto"
+            android:textColorHint="@color/texto_suave"
+            android:textSize="15sp" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tvEstado"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:padding="12dp"
+        android:textColor="@color/texto_suave"
         android:textSize="16sp" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvProductos"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingStart="6dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="6dp"
+        android:paddingBottom="6dp" />
 
     <Button
         android:id="@+id/btnCarrito"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_marginTop="8dp" />
-
-    <Button
-        android:id="@+id/btnSalir"
-        style="@style/Widget.MaterialComponents.Button.TextButton"
-        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Cerrar sesión" />
+        android:layout_margin="12dp" />
 </LinearLayout>
