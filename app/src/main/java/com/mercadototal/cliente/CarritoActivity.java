@@ -23,6 +23,8 @@ public class CarritoActivity extends AppCompatActivity {
     private boolean perfilCargado = false;
     private CarritoAdapter adapter;
     private TextView tvTotal, tvVacio;
+    private double tasaUSD = 0;
+    private com.google.firebase.firestore.ListenerRegistration tasaRegistro;
     private TextInputEditText etDireccion;
     private Button btnEnviar;
 
@@ -45,6 +47,10 @@ public class CarritoActivity extends AppCompatActivity {
         rv.setAdapter(adapter);
 
         btnEnviar.setOnClickListener(v -> enviar());
+        tasaRegistro = Repo.escucharTasaUSD(new Repo.Callback<Double>() {
+            @Override public void ok(Double v) { tasaUSD = v == null ? 0 : v; refrescar(); }
+            @Override public void error(String m) { }
+        });
         refrescar();
 
         Repo.perfil(new Repo.Callback<Map<String, Object>>() {
@@ -64,11 +70,13 @@ public class CarritoActivity extends AppCompatActivity {
         });
     }
 
+    @Override protected void onDestroy() { if (tasaRegistro != null) tasaRegistro.remove(); super.onDestroy(); }
+
     private void refrescar() {
         adapter.notifyDataSetChanged();
         boolean vacio = Carrito.items.isEmpty();
         tvVacio.setVisibility(vacio ? View.VISIBLE : View.GONE);
-        tvTotal.setText("Total: " + Carrito.dinero(Carrito.total()));
+        tvTotal.setText("Total: " + Carrito.dinero(Carrito.total()) + " CUP"\n            + (tasaUSD > 0 ? "\\nEquivalente: " + Carrito.dinero(Carrito.total()/tasaUSD) + " USD" : ""));
         btnEnviar.setEnabled(!vacio && perfilCargado);
     }
 
@@ -126,7 +134,7 @@ public class CarritoActivity extends AppCompatActivity {
             h.nombre.setText(i.nombre);
             h.subtotal.setText(Carrito.dinero(i.precio) + " c/u  ·  "
                 + Carrito.dinero(i.precio * i.cantidad));
-            h.cant.setText(String.valueOf(i.cantidad));
+            h.cant.setText(Carrito.cantidadTexto(i.cantidad) + " " + i.unidadMedida);
 
             h.menos.setOnClickListener(v -> {
                 int p = h.getBindingAdapterPosition();
