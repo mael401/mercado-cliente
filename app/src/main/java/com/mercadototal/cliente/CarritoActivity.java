@@ -76,7 +76,8 @@ public class CarritoActivity extends AppCompatActivity {
         adapter.notifyDataSetChanged();
         boolean vacio = Carrito.items.isEmpty();
         tvVacio.setVisibility(vacio ? View.VISIBLE : View.GONE);
-        tvTotal.setText("Total: " + Carrito.dinero(Carrito.total()) + " CUP"\n            + (tasaUSD > 0 ? "\\nEquivalente: " + Carrito.dinero(Carrito.total()/tasaUSD) + " USD" : ""));
+        tvTotal.setText("Total: " + Carrito.dinero(Carrito.total()) + " CUP"
+            + (tasaUSD > 0 ? "\\nEquivalente: " + Carrito.dinero(Carrito.total()/tasaUSD) + " USD" : ""));
         btnEnviar.setEnabled(!vacio && perfilCargado);
     }
 
